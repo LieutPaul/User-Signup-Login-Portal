@@ -73,9 +73,13 @@ app.post('/login', async (req, res) => {
                         console.log(err);
                     }
                     if(data){
-                        const token = jwt.sign(user,process.env.REFRESH_TOKEN_SECRET);
-                        return res.json({status:'ok', token : token});
-                    } else {
+                        const token = jwt.sign({
+                            name: data.name,
+                            username : data.username
+                        }, process.env.REFRESH_TOKEN_SECRET);
+                        
+                        return res.json({token:token, status:'ok'});
+                    }else{
                         return res.status(401).send("Wrong Password")
                     }
                 });
