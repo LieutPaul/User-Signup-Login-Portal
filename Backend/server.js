@@ -76,7 +76,6 @@ app.post('/register', async (req, res) => {
 
 // API Route to try to login a user
 app.post('/login', async (req, res) => {
-    console.log(req.body.email)
     User.findOne({email:req.body.email},(err,user)=>{
         if(err){
             console.log(err);
@@ -87,12 +86,9 @@ app.post('/login', async (req, res) => {
                         console.log(err);
                     }
                     if(data){
-                        const token = jwt.sign({
-                            name: data.name,
-                            username : data.username
-                        }, process.env.ACCESS_TOKEN_SECRET, (err,token)=>{
+                        jwt.sign({user},process.env.ACCESS_TOKEN_SECRET,(err,token)=>{
                             res.send(token);
-                        });
+                        })
                     }else{
                         return res.send("Wrong Password")
                     }
