@@ -13,7 +13,7 @@ mongoose.set('strictQuery', false);
 mongoose.connect("mongodb://localhost:27017/userAuthenticationDB",{useNewURLParser:true});
 
 const UserSchema = new mongoose.Schema({
-    name : String,
+    email : String,
     username : String,
     password : String,
 });
@@ -39,7 +39,7 @@ function authenticateToken(req,res,next) { //MiddleWare to check if JWT is valid
 }
 
 app.get('/user', authenticateToken, (req, res) => {
-    // res.send(req.user);
+    res.send(req.user);
 });
 
 // API Route to create a user
@@ -47,7 +47,7 @@ app.post('/register', async (req, res) => {
     // Adding user to list of users
     const hashedPassword = await bcrypt.hash(req.body.password,10) //Hashing the password with 10 salt rounds
     const user = new User({ 
-        name: req.body.name, 
+        email: req.body.email, 
         username:req.body.username, 
         password: hashedPassword 
     });
@@ -76,7 +76,8 @@ app.post('/register', async (req, res) => {
 
 // API Route to try to login a user
 app.post('/login', async (req, res) => {
-    User.findOne({username:req.body.username},(err,user)=>{
+    console.log(req.body.email)
+    User.findOne({email:req.body.email},(err,user)=>{
         if(err){
             console.log(err);
         }else{
@@ -89,15 +90,15 @@ app.post('/login', async (req, res) => {
                         const token = jwt.sign({
                             name: data.name,
                             username : data.username
-                        }, process.env.ACCESS_TOKEN_SECRET);
-                        
-                        return res.json({token:token, status:'ok'});
+                        }, process.env.ACCESS_TOKEN_SECRET, (err,token)=>{
+                            res.send(token);
+                        });
                     }else{
-                        return res.status(401).send("Wrong Password")
+                        return res.send("Wrong Password")
                     }
                 });
             }else{
-                res.status(404).send("User does not exist.")
+                res.send("User does not exist")
             }
         }
     })
