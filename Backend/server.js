@@ -25,8 +25,7 @@ function authenticateToken(req,res,next) { //MiddleWare to check if JWT is valid
     const authHeader = req.headers['authorization']
     const token = authHeader && authHeader.split(' ')[1];
     req.token=token
-    // console.log("Token is "+token)
-    if(token==null){
+    if(token=="null"){
         return res.send(false);
     }
 
@@ -39,9 +38,8 @@ function authenticateToken(req,res,next) { //MiddleWare to check if JWT is valid
     })
 }
 
-app.get('/', authenticateToken, (req, res) => {
-    //Get all registered Users
-    res.send(req.user);
+app.get('/user', authenticateToken, (req, res) => {
+    // res.send(req.user);
 });
 
 // API Route to create a user
