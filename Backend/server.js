@@ -1,11 +1,13 @@
 require('dotenv').config()
 const express = require('express')
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+const cors=require('cors');
 const mongoose=require('mongoose');
 const jwt = require('jsonwebtoken')
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 mongoose.set('strictQuery', false);
 mongoose.connect("mongodb://localhost:27017/userAuthenticationDB",{useNewURLParser:true});
@@ -15,19 +17,31 @@ const UserSchema = new mongoose.Schema({
     username : String,
     password : String,
 });
+
 const User = mongoose.model("User",UserSchema);
 
-app.use(express.json())
+function authenticateToken(req,res,next) { //MiddleWare to check if JWT is valid
+    //Header - Bearer TOKEN
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1];
+    req.token=token
+    // console.log("Token is "+token)
+    if(token==null){
+        return res.send(false);
+    }
 
-app.get('/users', (req, res) => {
-    //Get all registered Users
-    User.find({},(err,result)=>{
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err,user)=>{
         if(err){
-            console.log(err);
-        }else{
-            res.send(result);
+            res.send(false); //Invalid Token => No Access
         }
+        req.user = user;
+        next();
     })
+}
+
+app.get('/', authenticateToken, (req, res) => {
+    //Get all registered Users
+    res.send(req.user);
 });
 
 // API Route to create a user
@@ -39,21 +53,22 @@ app.post('/register', async (req, res) => {
         username:req.body.username, 
         password: hashedPassword 
     });
-    console.log(user);
     User.find({username:req.body.username},(err,result)=>{
         if(err){
             console.log(err);
         }else{
             if(result.length !== 0){
-                res.status(400).send('User already exists.');
+                res.send('User already exists');
             }else{
                 user.save((err, result) => {
                     if(err){
                         console.log(err);
+                        res.send('User already exists');
                     }else{
-                        res.status(201).send("User Added");
+                        jwt.sign({user},process.env.ACCESS_TOKEN_SECRET,(err,token)=>{
+                            res.send(token);
+                        })
                     }
-                    
                 });
             }
         }
@@ -76,7 +91,7 @@ app.post('/login', async (req, res) => {
                         const token = jwt.sign({
                             name: data.name,
                             username : data.username
-                        }, process.env.REFRESH_TOKEN_SECRET);
+                        }, process.env.ACCESS_TOKEN_SECRET);
                         
                         return res.json({token:token, status:'ok'});
                     }else{
@@ -91,6 +106,6 @@ app.post('/login', async (req, res) => {
     
 });
 
-app.listen(3000, ()=>{
-    console.log("Listening on port 3000.")
+app.listen(4000, ()=>{
+    console.log("Listening on port 4000.")
 })
